@@ -31,6 +31,7 @@ def main():
     #parse_excel()
 
     # Parse word document and extract text chunks and projects
+    # Add ai_tags=True to add AI-generated tags to parsed text chunks
     parser = TextParser(INPUT_WORD_DATA)
     text_chunks = parser.parse_document()
     projects = parser.get_projects()

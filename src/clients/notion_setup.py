@@ -1,8 +1,9 @@
 from config.notion_config import NotionConfig, DBTables
 from src.models.models import Project, TextChunk
 
-def initialize_notion_databases(notion_client, config):
+def initialize_notion_databases(notion_client):
     """Initialize or get Notion databases for projects and text library"""
+    config = notion_client.config
     projects_id = notion_client.search_database("BBB Projects")
     text_library_id = notion_client.search_database("BBB Text Library")
     

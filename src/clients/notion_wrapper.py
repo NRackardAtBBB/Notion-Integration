@@ -5,34 +5,72 @@ from typing import Optional
 import uuid
 from src.utils.notion_response_cleaner import clean_text_chunk_record
 import logging
+from config.notion_config import NotionConfig
+from src.models.models import Project, TextChunk
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
 class NotionWrapper:
-    def __init__(self, api_key: str, test_mode: bool = False):
-        self.client = Client(auth=api_key)
+    def __init__(self, test_mode: bool = False):
         self.test_mode = test_mode
-        
-        # Optionally define a file path for test records:
+        self.config = NotionConfig()
+        self.client = Client(auth=self.config.api_key)
         self.test_file = os.path.join("data", "test_notion_pages.xlsx")
+        self.project_table_id, self.text_table_id = self.initialize_notion_databases()
     
-    def create_database(self, parent_id: str, db_name: str, properties: dict) -> str:
+    # Database Operations
+    def initialize_notion_databases(self):
+            """Initialize or get Notion databases for projects and text library"""
+            projects_id = self.find_database_by_name("BBB Projects")
+            text_library_id = self.find_database_by_name("BBB Text Library")
+            
+            if not projects_id:
+                projects_id = self.create_database(
+                    self.config.page_id,
+                    self.config.DBTables.PROJECTS.value,
+                    Project.database_schema()
+                )
+
+            if not text_library_id:
+                text_library_id = self.create_database(
+                    self.config.page_id, 
+                    self.config.DBTables.TEXT_LIBRARY.value, 
+                    TextChunk.database_schema(projects_id)
+                )
+                
+            return projects_id, text_library_id
+
+    def create_database(self, parent_page_id: str, db_name: str, properties: dict) -> str:
         """
-        Create a new database under a given page.
+        Create a new database under a given page and return its ID.
         """
-        print(f"Creating database: {db_name}")
         new_database = {
-            "parent": {"page_id": parent_id},
+            "parent": {"page_id": parent_page_id},
             "title": [ {"type": "text", "text": {"content": db_name } } ],
             "properties": properties
         }
+
         response = self.client.databases.create(**new_database)
         return response["id"]
 
     def update_database(self, database_id: str, properties: dict) -> None:
+        """Updates existing database properties"""
         return self.client.databases.update(database_id=database_id, properties=properties)
+    
+    def find_database_by_name(self, query: str) -> Optional[str]:
+        """Searches for database by name and returns its ID if found"""
 
+        results = self.client.search(
+            query=query,
+            filter={"property": "object", "value": "database"}
+        ).get("results")
+        
+        return results[0]["id"] if results else None
+    
+
+    # Page Operations
     def create_page(self, database_id: str, properties: dict) -> dict:
+        """Creates a new page in specified database"""
         new_page = {
             "parent": {"database_id": database_id},
             "properties": properties
@@ -46,13 +84,24 @@ class NotionWrapper:
             return self.client.pages.create(**new_page)
         
 
-    def search_database(self, query: str) -> Optional[str]:
-        results = self.client.search(
-            query=query,
-            filter={"property": "object", "value": "database"}
-        ).get("results")
-        return results[0]["id"] if results else None
+    # Project and Text Management
+    def add_projects(self, projects):
+        """Add projects to Notion and return mapping of project numbers to Notion IDs"""
+        project_ids = {}
+        for project in projects:
+            response = self.create_page(self.project_table_id, project.to_notion_properties())
+            project_ids[project.project_number] = response["id"]
+            logging.info(f"Added project: {project.name}")
+        return project_ids
     
+    def add_text_chunks(self, text_chunks, project_ids):
+        """Add text chunks to Notion with project relations"""
+        for chunk in text_chunks:
+            notion_uuid = project_ids[chunk.project_number]
+            chunk.project_id = notion_uuid
+            self.create_page(self.text_table_id, chunk.to_notion_properties())
+            logging.info(f"Added chunk: {chunk.title}")
+
     def _save_to_excel(self, page_data: dict) -> None:
         """
         Save the page data to an Excel file.
@@ -112,19 +161,3 @@ class NotionWrapper:
                 items[new_key] = v
         return items
     
-    def add_projects(self, project_table_id, projects):
-        """Add projects to Notion and return mapping of project numbers to Notion IDs"""
-        project_ids = {}
-        for project in projects:
-            response = self.create_page(project_table_id, project.to_notion_properties())
-            project_ids[project.project_number] = response["id"]
-            logging.info(f"Added project: {project.name}")
-        return project_ids
-    
-    def add_text_chunks(self, chunk_table_id, text_chunks, project_ids):
-        """Add text chunks to Notion with project relations"""
-        for chunk in text_chunks:
-            notion_uuid = project_ids[chunk.project_number]
-            chunk.project_id = notion_uuid
-            self.create_page(chunk_table_id, chunk.to_notion_properties())
-            logging.info(f"Added chunk: {chunk.title}")

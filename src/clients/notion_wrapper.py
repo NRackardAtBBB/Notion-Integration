@@ -4,11 +4,15 @@ import openpyxl
 from typing import Optional
 import uuid
 from src.utils.notion_response_cleaner import clean_text_chunk_record
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
 class NotionWrapper:
     def __init__(self, api_key: str, test_mode: bool = False):
         self.client = Client(auth=api_key)
         self.test_mode = test_mode
+        
         # Optionally define a file path for test records:
         self.test_file = os.path.join("data", "test_notion_pages.xlsx")
     
@@ -107,3 +111,20 @@ class NotionWrapper:
             else:
                 items[new_key] = v
         return items
+    
+    def add_projects(self, project_table_id, projects):
+        """Add projects to Notion and return mapping of project numbers to Notion IDs"""
+        project_ids = {}
+        for project in projects:
+            response = self.create_page(project_table_id, project.to_notion_properties())
+            project_ids[project.project_number] = response["id"]
+            logging.info(f"Added project: {project.name}")
+        return project_ids
+    
+    def add_text_chunks(self, chunk_table_id, text_chunks, project_ids):
+        """Add text chunks to Notion with project relations"""
+        for chunk in text_chunks:
+            notion_uuid = project_ids[chunk.project_number]
+            chunk.project_id = notion_uuid
+            self.create_page(chunk_table_id, chunk.to_notion_properties())
+            logging.info(f"Added chunk: {chunk.title}")

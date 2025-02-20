@@ -29,6 +29,7 @@ from enum import Enum
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 
+TEXT_LIBRARY_PATH = "data/raw/Text Library_BBBProfile--2020_TEAMS.docx"
 
 # Use environment variables with fallback to default values
 LOG_DIR = os.environ.get('BIM_LOG_DIR', os.path.join(PROJECT_ROOT, 'logs'))
@@ -55,7 +56,8 @@ MODEL_PROVIDERS = {
     'gpt-4o' : 'openai',
     'gpt-4o-mini' : 'openai',
     'o1-preview' : 'openai',
-    'o1-mini' : 'openai'
+    'o1-mini' : 'openai',
+    'o3-mini' : 'openai'
     }
 
 MODEL_NAMES = {
@@ -67,6 +69,7 @@ MODEL_NAMES = {
     'gpt-4o-mini' : 'ChatGPT 4-Mini',
     'o1-preview' : 'ChatGPT o1',
     'o1-mini' : 'ChatGPT o1-Mini',
+    'o3-mini' : 'ChatGPT o3-Mini'
     }
 
 MODEL_SETTINGS = {
@@ -91,7 +94,8 @@ MODEL_IDS = {
     '4o': 'gpt-4o',
     '4o_mini': 'gpt-4o-mini',
     'o1': 'o1-preview',
-    'o1_mini': 'o1-mini'
+    'o1_mini': 'o1-mini',
+    'o3_mini': 'o3-mini'
     }
 
 
@@ -112,6 +116,12 @@ DATABASE_SETTINGS = {
     'timeout': 30
 }
 
+ACCEPTS_SYSTEM_PROMPTS = [
+        'gpt-4',
+        'gpt-4-turbo-preview',
+        'gpt-3.5-turbo'
+    ]
+
 class LLModel(Enum):
     CLAUDE_SONNET = 'claude-3-5-sonnet-20241022'
     CLAUDE_HAIKU = 'claude-3-5-haiku-20241022'
@@ -121,6 +131,7 @@ class LLModel(Enum):
     GPT_4O_MINI =  'gpt-4o-mini'
     GPT_O1 = 'o1-preview'
     GPT_O1_MINI =  'o1-mini'
+    GPT_O3_MINI = 'o3-mini'
 
     @property
     def id(self) -> str:

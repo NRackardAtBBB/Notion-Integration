@@ -3,6 +3,7 @@ from ..llm.handlers.anthropic_handler import AnthropicHandler
 from config.prompts import SystemPrompts
 from typing import Dict
 from config.settings import LLModel
+from ..llm.handlers.openai_handler import OpenAIHandler
 
 
 class ModelFactory:
@@ -11,7 +12,7 @@ class ModelFactory:
 
         model_handlers = {
             "anthropic": AnthropicHandler,
-            #"openai": OpenAIHandler
+            "openai": OpenAIHandler
         }
 
         handler_class = model_handlers.get(model_type.provider)

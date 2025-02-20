@@ -1,6 +1,8 @@
 from enum import Enum
 
 class SystemPrompts(Enum):
+    TEST_PROMPT = "You are a helpful assistant."
+
     CONTENT_TAGGER = """You are a precise content tagger. Your task is to analyze the provided text and assign relevant tags from the approved list below. All tags must be in lowercase.
 
     APPROVED TAGS:
@@ -35,7 +37,6 @@ def generate_tagging_prompt(approved_tags: list[str]) -> str:
     Generate a prompt for the LLM to tag content based on approved tags.
     
     Args:
-        text (str): The text content to be tagged
         approved_tags (list[str]): List of approved tags
         
     Returns:

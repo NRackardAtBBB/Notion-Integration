@@ -1,58 +1,75 @@
 
 import logging
 
-from src.models.models import Project, TextChunk
-from config.notion_config import NotionConfig, DBTables
+from config.notion_config import NotionConfig
 from src.clients.notion_wrapper import NotionWrapper
 from src.parsers.text_parser import TextParser
 import logging
-from src.llm.claude_test import test_anthropic_handler
+from src.llm.claude_test import test_LLM
+from src.clients.notion_setup import initialize_notion_databases
+from config.settings import TEXT_LIBRARY_PATH
+from src.parsers.excel_parser import ExcelParser
+import argparse
+from pathlib import Path
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+
+
+def parse_excel():
+    # Hardcoded paths using Path for cross-platform compatibility
+    input_path = Path("data/raw/Boilerplates export_20250123_1208.xlsx")
+    output_path = Path("data/processed/parsed_output.xlsx")
+    test_rows = None  # Set to None for full file processing
+
+    logging.info(f"Processing file: {input_path}")
+    
+    parser = ExcelParser(input_path)
+    
+    if test_rows:
+        logging.info(f"Running in test mode with {test_rows} rows")
+        df = parser.parse_text_column(test_rows=test_rows)
+    else:
+        logging.info("Processing entire file")
+        df = parser.parse_text_column()
+        
+    parser.save_parsed_data(output_path, df)
+    logging.info(f"Results saved to: {output_path}")
+
+
+def main():
+
+    setup_logging()
+    parse_excel()
+
+if __name__ == "__main__":
+    setup_logging()
+    parse_excel()
+
+
+"""
 def main():
 
     config = NotionConfig()
     notion = NotionWrapper(config.api_key, False)
     
     # Parse Document
-    file_path = "data/raw/Text Library_BBBProfile--2020_TEAMS.docx"
-    parser = TextParser(file_path)
+    parser = TextParser(TEXT_LIBRARY_PATH)
     text_chunks = parser.parse_document()
     projects = parser.get_projects()
 
-    # Create or get databases
-    
-    projects_id = notion.search_database("BBB Projects")
-    
-    if not projects_id:
-        projects_id = notion.create_database(
-            config.page_id,
-            DBTables.PROJECTS.value,
-            Project.database_schema()
-            )
-    text_library_id = notion.search_database("BBB Text Library")
+    project_table_id, text_table_id = initialize_notion_databases(notion, config)
 
-    if not text_library_id:
-        text_library_id = notion.create_database(
-            config.page_id, 
-            DBTables.TEXT_LIBRARY.value, 
-            TextChunk.database_schema(projects_id)
-            )
-    
-    # Add projects to Notion
-    project_ids = {}
-    for project in projects:
-        response = notion.create_page(projects_id, project.to_notion_properties())
-        project_ids[project.project_number] = response["id"]
-        logging.info(f"Added project: {project.name}")
-
-    # Add text chunks with project relations
-    for chunk in text_chunks:
-        notion_uuid = project_ids[chunk.project_number]
-        chunk.project_id = notion_uuid
-        notion.create_page(text_library_id, chunk.to_notion_properties())
-        logging.info(f"Added chunk: {chunk.title}")
+    project_ids = notion.add_projects(project_table_id, projects)
+    notion.add_text_chunks(text_table_id, text_chunks, project_ids)
 
 if __name__ == "__main__":
     main()
+"""

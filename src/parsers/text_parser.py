@@ -1,5 +1,4 @@
 from typing import List, Dict, Any, Tuple
-import pathlib
 import re
 from datetime import datetime
 from docx import Document
@@ -8,16 +7,19 @@ from src.utils.tags_sanitizer import sanitize_tags
 from src.utils.tag_repository import update_approved_tags
 from src.llm.model_factory import ModelFactory
 from config.settings import LLModel
+import logging
 
 # Test with a simple prompt
 model_factory = ModelFactory()
-llm = model_factory.create_model(LLModel.CLAUDE_SONNET)
+llm = model_factory.create_model(LLModel.GPT_O1_MINI)
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
 class TextParser:
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, add_ai_tags: bool = False):
         self.file_path = file_path
         self.projects: Dict[str, Project] = {}  # Key: project_number
+        self.add_ai_tags = add_ai_tags
 
     def get_word_doc_text(self) -> str:
         doc = Document(self.file_path)
@@ -30,6 +32,14 @@ class TextParser:
         # Remove < and > symbols and split components
         header = header_line.strip('<>').strip()
         parts = [part.strip() for part in header.split('|')]
+
+        # Validate header has correct number of parts
+        expected_parts = 5
+        if len(parts) != 5:
+            logging.error(f"Invalid header format. Expected 5 parts, got {len(parts)}")
+            logging.error(f"Header content: {header_line}")
+            raise ValueError(f"Header must contain {expected_parts} parts separated by '|'")
+    
         
         # Create project from header
         project = Project(
@@ -75,8 +85,11 @@ class TextParser:
             # Update the approved tags repository with any new sanitized tags
             update_approved_tags(sanitized_tags)
 
-
-            ai_tags = llm.process_tags(content)
+            # Generate AI tags if enabled
+            if self.add_ai_tags:
+                ai_tags = llm.process_tags(content)
+            else:
+                ai_tags = []
             
             # Create text chunk with the sanitized tags
             chunk = TextChunk(

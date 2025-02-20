@@ -24,23 +24,26 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 
 # Base directory for relative paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 
-TEXT_LIBRARY_PATH = "data/raw/Text Library_BBBProfile--2020_TEAMS.docx"
+
+INPUT_WORD_DATA = PROJECT_ROOT / "data" / "raw" / "Text Library_BBBProfile--2020_TEAMS.docx"
+INPUT_EXCEL_DATA = PROJECT_ROOT / "data" / "raw" / "Boilerplates export_20250123_1208.xlsx"
+
+OUTPUT_EXCEL_DATA = PROJECT_ROOT / "data" / "processed" / "parsed_output.xlsx"
+
+
 
 # Use environment variables with fallback to default values
-LOG_DIR = os.environ.get('BIM_LOG_DIR', os.path.join(PROJECT_ROOT, 'logs'))
+input_path = Path("data/raw/Boilerplates export_20250123_1208.xlsx")
+output_path = Path("data/processed/parsed_output.xlsx")
+
 today_date = datetime.now()
 today = today_date.strftime("%A")
-LOG_FILE_PATH = os.path.join(LOG_DIR, f'notion_library_{today}.log')
-TEST_LOG_FILE_PATH = os.path.join(LOG_DIR, 'log_for_testing.log')
-
-# Task Execution Log Files Location
-TASK_EXECUTION_LOG_PATH = os.path.join(LOG_DIR, 'task_execution_logs.csv')
-
 
 # Load environment variables
 load_dotenv()

@@ -3,6 +3,9 @@ import re
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+import logging
+from config.settings import INPUT_EXCEL_DATA, OUTPUT_EXCEL_DATA
 
 @dataclass
 class ParsedMetadata:
@@ -18,6 +21,22 @@ class TextChunk:
     section_title: str = ""
     metadata: Optional[ParsedMetadata] = None
     
+
+def parse_excel(test_rows = None):
+      # Set to None for full file processing
+    logging.info(f"Processing file: {INPUT_EXCEL_DATA}")
+    parser = ExcelParser(INPUT_EXCEL_DATA)
+
+    if test_rows:
+        logging.info(f"Running in test mode with {test_rows} rows")
+        df = parser.parse_text_column(test_rows=test_rows)
+
+    else:
+        logging.info("Processing entire file")
+        df = parser.parse_text_column()
+        
+    parser.save_parsed_data(OUTPUT_EXCEL_DATA, df)
+    logging.info(f"Results saved to: {OUTPUT_EXCEL_DATA}")
 
 class ExcelParser:
     def __init__(self, file_path: str):

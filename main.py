@@ -26,9 +26,7 @@ def setup_logging():
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
 
-
 def main():
-
     # Functionality in progress - Uncomment to parse excel file to formatted excel file
     #parse_excel()
 

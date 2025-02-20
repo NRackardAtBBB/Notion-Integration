@@ -29,7 +29,6 @@ class Project:
         }
     
     
-
     def to_notion_properties(self) -> dict:
         """Convert to Notion API properties format"""
         properties = {
